@@ -7,7 +7,7 @@ class MaximalRepeat(object):
     __slots__ = ('strings', 'length', 'indices')
 
     def __init__(self, strings, length, indices):
-        self.strings, self.length, self.indices = strings, length, indices
+        self.strings, self.length, self.indices = strings, length, sorted(indices)
     
     def __repr__(self):
         index = iter(self.indices).next()
@@ -36,29 +36,32 @@ class Node(object):
         return self._children_keys
 
 class STrie(object):
-    __slots__ = ('root', 'strings', 'nodes_processed')
+    __slots__ = ('root', 'strings', 'nodes_processed', 'current')
 
     def __init__(self):
         self.root = Node(None)
         self.strings = []
         self.nodes_processed = 0
+        self.current = None
 
     def add(self, string):
         self.nodes_processed = 0
         self.strings.append(string)
         string_index = len(self.strings) - 1
-        current = self.root
+        self.current = self.root
         for i in xrange(len(string)):
-            current = self._insert((string_index, i), current)
-        self._insert((string_index, len(string)), current)
-        return self.nodes_processed
+            for count in self._insert((string_index, i)):
+                yield count
+        for count in self._insert((string_index, len(string))):
+            yield count
+        yield self.nodes_processed
     
-    def _insert(self, index, node):
+    def _insert(self, index):
         try:
             key = self.strings[index[0]][index[1]]
         except IndexError:
             key = index
-        current, last_inserted = node, None
+        current, last_inserted = self.current, None
         while current is not None:
             child = None
             if key in current.keys():
@@ -76,7 +79,9 @@ class STrie(object):
             current[key] = child
             current, last_inserted = current.suffix_link, child
             self.nodes_processed += 1
-        return node[key]
+            if self.nodes_processed % 1000 == 0:
+                yield self.nodes_processed
+        self.current = self.current[key]
 
     def maximal_repeats(self, cutoff_repeats=3, cutoff_length=3):
         ret = []
@@ -105,6 +110,8 @@ class STrie(object):
     
 if __name__ == '__main__':
     import argparse
+    from sys import stdout
+
     import pygraphviz as pgv
 
     def render_node_r(node, strings, graph):
@@ -151,7 +158,11 @@ if __name__ == '__main__':
         args = parser.parse_args()
         trie = STrie()
         for string in args.string:
-            print trie.add(string), 'nodes processed'
+            print string
+            for count in trie.add(string):
+                stdout.write('\r\t%d nodes processed' % count)
+                stdout.flush()
+            stdout.write('\n')
         result = render_trie(trie)
         result.layout('dot')
         result.draw(''.join(args.string) + '-strie.png')

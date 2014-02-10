@@ -23,7 +23,6 @@ class Analyzer(object):
         self.lines = []
         self.lineno_map = []
         self.trie = STrie()
-        self.nodes_processed = 0
 
     def add(self, filename):
         elements = []
@@ -42,7 +41,8 @@ class Analyzer(object):
                 actual_index += 1
         self.lines.append(elements)
         self.lineno_map.append(lineno_map)
-        return self.trie.add(elements)
+        for count in self.trie.add(elements):
+            yield count
     
 def main():
     parser = argparse.ArgumentParser(description = __doc__)
@@ -56,12 +56,15 @@ def main():
     a = Analyzer()
     total = 0
     for filename in filenames:
-        print "processing", filename, "...",
+        print "processing", filename, "..."
         stdout.flush()
-        node_count = a.add(filename)
-        print node_count, "nodes processed"
+        for node_count in a.add(filename):
+            stdout.write('\r\t%d nodes processed' % node_count)
+            stdout.flush()
         total += node_count
+        stdout.write('\n')
     print "total nodes:", total
+    print "finding maximal repeats (this may take a while)"
     repeats = sorted(a.trie.maximal_repeats(),\
             lambda x, y: cmp(x.length, y.length), reverse=True)
     for repeat in repeats:
