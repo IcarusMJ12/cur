@@ -4,6 +4,8 @@ A sample implementation of Ukkonen's suffix trie.
 """
 
 class MaximalRepeat(object):
+    __slots__ = ('strings', 'length', 'indices')
+
     def __init__(self, strings, length, indices):
         self.strings, self.length, self.indices = strings, length, indices
     
@@ -13,6 +15,8 @@ class MaximalRepeat(object):
         return '<' + str(list(self.indices)) + ':' + string + '>'
 
 class Node(object):
+    __slots__ = ('indices', '_children', '_children_keys', 'suffix_link')
+
     def __init__(self, index, suffix_link=None):
         self.indices = set([index])
         self._children = {}
@@ -32,39 +36,47 @@ class Node(object):
         return self._children_keys
 
 class STrie(object):
+    __slots__ = ('root', 'strings', 'nodes_processed')
+
     def __init__(self):
         self.root = Node(None)
         self.strings = []
-        self.nodes_added = 0
+        self.nodes_processed = 0
 
     def add(self, string):
-        self.nodes_added = 0
+        self.nodes_processed = 0
         self.strings.append(string)
         string_index = len(self.strings) - 1
         current = self.root
         for i in xrange(len(string)):
             current = self._insert((string_index, i), current)
         self._insert((string_index, len(string)), current)
-        return self.nodes_added
+        return self.nodes_processed
     
     def _insert(self, index, node):
         try:
             key = self.strings[index[0]][index[1]]
         except IndexError:
             key = index
-        if key in node.keys():
-            n = node[key]
-            while n.suffix_link is not None:
-                n.indices.add(index)
-                n = n.suffix_link
-            return node[key]
-        if node.suffix_link is None:
-            child = Node(index, node)
-        else:
-            child = Node(index, self._insert(index, node.suffix_link))
-        node[key] = child
-        self.nodes_added += 1
-        return child
+        current, last_inserted = node, None
+        while current is not None:
+            child = None
+            if key in current.keys():
+                n = current[key]
+                while n.suffix_link is not None:
+                    n.indices.add(index)
+                    n = n.suffix_link
+                child = current[key]
+            elif current.suffix_link is None:
+                child = Node(index, current)
+            else:
+                child = Node(index)
+            if last_inserted is not None:
+                last_inserted.suffix_link = child
+            current[key] = child
+            current, last_inserted = current.suffix_link, child
+            self.nodes_processed += 1
+        return node[key]
 
     def maximal_repeats(self, cutoff_repeats=3, cutoff_length=3):
         result = []
@@ -135,11 +147,11 @@ if __name__ == '__main__':
     def main():
         parser = argparse.ArgumentParser(description = __doc__)
         parser.add_argument("string", nargs='+',
-                help="String to render the suffix trie of into a 'result.png'.")
+                help="String to render the suffix trie of")
         args = parser.parse_args()
         trie = STrie()
         for string in args.string:
-            print trie.add(string), 'nodes added'
+            print trie.add(string), 'nodes processed'
         result = render_trie(trie)
         result.layout('dot')
         result.draw(''.join(args.string) + '-strie.png')

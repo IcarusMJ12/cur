@@ -7,6 +7,7 @@ Finds oc-CUR-rences of maximal repeats in ur code.
 """
 
 from os.path import basename
+from sys import stdout
 
 import argparse
 from termcolor import colored
@@ -22,7 +23,7 @@ class Analyzer(object):
         self.lines = []
         self.lineno_map = []
         self.trie = STrie()
-        self.nodes_added = 0
+        self.nodes_processed = 0
 
     def add(self, filename):
         elements = []
@@ -56,8 +57,9 @@ def main():
     total = 0
     for filename in filenames:
         print "processing", filename, "...",
+        stdout.flush()
         node_count = a.add(filename)
-        print node_count, "nodes added"
+        print node_count, "nodes processed"
         total += node_count
     print "total nodes:", total
     repeats = sorted(a.trie.maximal_repeats(),\
