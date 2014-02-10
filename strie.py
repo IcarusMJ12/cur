@@ -79,29 +79,29 @@ class STrie(object):
         return node[key]
 
     def maximal_repeats(self, cutoff_repeats=3, cutoff_length=3):
-        result = []
+        ret = []
         seen = {}
         for key in self.root.keys():
-            ret = [r for r in self._maximal_repeats_r(self.root[key])\
-                    if min(r.indices) not in seen.keys() or\
-                    len(r.indices) > seen[min(r.indices)]]
-            for r in ret:
-                seen[min(r.indices)] = len(r.indices)
-            result += ret
-        return [r for r in result\
+            result = []
+            stack = [(self.root[key], 1)]
+            while len(stack) != 0:
+                node, length = stack.pop()
+                len_keys = len(node.keys())
+                if len_keys == 0 and (min(node.indices) not in seen.keys() or\
+                        len(node.indices) > seen[min(node.indices)]):
+                    result.append(MaximalRepeat(self.strings, length, node.indices))
+                elif len_keys == 1:
+                    stack.append( (node[node.keys()[0]], length + 1) )
+                else:
+                    for key in node.keys():
+                        stack.append( (node[key], length + 1) )
+                    if min(node.indices) not in seen.keys() or\
+                            len(node.indices) > seen[min(node.indices)]:
+                        result.append(MaximalRepeat(self.strings, length, node.indices))
+            seen.update([(min(r.indices), len(r.indices)) for r in result])
+            ret += result
+        return [r for r in ret\
                 if len(r.indices) >= cutoff_repeats and r.length >= cutoff_length]
-
-    def _maximal_repeats_r(self, node, length=1):
-        len_keys = len(node.keys())
-        if len_keys == 0:
-            return [MaximalRepeat(self.strings, length, node.indices)]
-        if len_keys == 1:
-            return self._maximal_repeats_r(node[node.keys()[0]], length + 1)
-        result = []
-        for key in node.keys():
-            result += self._maximal_repeats_r(node[key], length + 1)
-        result += [MaximalRepeat(self.strings, length, node.indices)]
-        return result
     
 if __name__ == '__main__':
     import argparse
@@ -155,7 +155,8 @@ if __name__ == '__main__':
         result = render_trie(trie)
         result.layout('dot')
         result.draw(''.join(args.string) + '-strie.png')
-        repeats = trie.maximal_repeats(3, 3)
+        repeats = sorted(trie.maximal_repeats(3, 3),\
+                lambda x, y: cmp(x.length, y.length), reverse=True)
         for r in repeats:
             print r
 
