@@ -5,6 +5,53 @@ A sample implementation of Ukkonen's suffix trie.
 
 __all__ = ['MaximalRepeat', 'Node', 'STrie']
 
+"""
+class SortedDictionary(object):
+    __slots__ = {'_items', '_keys'}
+
+    def __init__(self):
+        self._items, self._keys = None, None
+    
+    def keys(self):
+        if self._keys is not None:
+            if isinstance(self._keys, list):
+                for k in self._keys:
+                    yield k
+            else:
+                yield self._keys
+
+    def __len__(self):
+        if self._keys is None:
+            return 0
+        if isinstance(self._keys, list):
+            return len(self._keys)
+        return 1
+
+    def __getitem__(self, index):
+        if self._keys is not None:
+            if isinstance(self._keys, list):
+                return self._items[index]
+            if self._keys == index:
+                return self._items
+        raise KeyError(index)
+
+    def __setitem__(self, index, val):
+        if self._keys == None:
+            self._keys = index
+            self._items = val
+            return
+        if not isinstance(self._keys, list):
+            if index == self._keys:
+                self._items = val
+                return
+            self._keys = [self._keys, index]
+            self._items = {self._keys: self._items, index: val}
+            return
+        if index not in self._keys():
+            self._keys.append(index)
+        self._items[index] = val
+"""
+
 class MaximalRepeat(object):
     """
     A struct-like object for maximal repeat metadata.
@@ -30,7 +77,7 @@ class Node(object):
     """
     A suffix trie node.
     """
-    __slots__ = ('indices', '_children', '_children_keys', 'suffix_link')
+    __slots__ = ('indices', '_children', 'suffix_link')
 
     def __init__(self, index, suffix_link=None):
         """
@@ -38,35 +85,29 @@ class Node(object):
         """
         self.indices = set([index])
         self._children = {}
-        # stores the keys longest edge first
-        self._children_keys = []
         self.suffix_link = suffix_link
     
     def __getitem__(self, index):
         return self._children[index]
 
     def __setitem__(self, index, val):
-        if index not in self._children.keys():
-            self._children_keys.append(index)
         self._children[index] = val
     
     def keys(self):
-        """
-        The keys are kept sorted in insertion order.
-        """
-        return self._children_keys
+        return self._children.keys()
 
 class STrie(object):
     """
     A suffix trie.
     """
-    __slots__ = ('root', 'strings', 'nodes_processed', 'current')
+    __slots__ = ('root', 'strings', 'nodes_processed', 'current', '_root_keys')
 
     def __init__(self):
         self.root = Node(None)
         self.strings = []
         self.nodes_processed = 0
         self.current = None
+        self._root_keys = []
 
     def add(self, string):
         """
@@ -77,6 +118,8 @@ class STrie(object):
         string_index = len(self.strings) - 1
         self.current = self.root
         for i in xrange(len(string)):
+            if string[i] not in self.root.keys():
+                self._root_keys.append(string[i])
             for count in self._insert((string_index, i)):
                 yield count
         for count in self._insert((string_index, len(string))):
@@ -119,7 +162,7 @@ class STrie(object):
         """
         ret = []
         seen = {}
-        for key in self.root.keys():
+        for key in self._root_keys:
             result = []
             stack = [(self.root[key], 1, None)]
             while len(stack) != 0:
