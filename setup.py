@@ -3,7 +3,7 @@
 from setuptools import setup
 
 setup(name = 'cur',
-        version = '0.1.0',
+        version = '0.1.1',
         description = 'code copypasta detector',
         author = 'Igor Kaplounenko',
         author_email = 'igor@bittorrent.com',

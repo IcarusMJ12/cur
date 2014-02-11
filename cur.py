@@ -14,7 +14,7 @@ length-1 because the copypasta will be replaced by a function call, and there's
 __all__ = ['Analyzer']
 
 from os.path import basename
-from sys import stdout
+from sys import stdout, stderr
 
 import argparse
 from termcolor import colored
@@ -103,17 +103,17 @@ def main():
     a = Analyzer(canonize)
     total = 0
     for filename in filenames:
-        print "processing", filename, "..."
-        stdout.flush()
+        stderr.write("processing %s...\n" % filename)
+        stderr.flush()
         node_count = 0
         for node_count in a.add(filename):
-            if stdout.isatty():
-                stdout.write('\r\t%d nodes processed' % node_count)
-                stdout.flush()
+            if stderr.isatty():
+                stderr.write('\r\t%d nodes processed' % node_count)
+                stderr.flush()
         total += node_count
-        stdout.write('\n')
-    print "total nodes:", total
-    print "finding maximal repeats (this may take a while)"
+        stderr.write('\n')
+    stderr.write("total nodes: %d\n" % total)
+    stderr.write("finding maximal repeats (this may take a while)\n")
     repeats = a.get_sorted_repeats(metric)
     total_severity = 0
     for repeat in repeats:
