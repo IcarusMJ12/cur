@@ -1,0 +1,4 @@
+1. Get python 2.7 or later.
+2. Optionally edit setup.cfg to change the path where the executable scripts will be installed to.
+3. Run 'python setup.py build && sudo python setup.py install'
+4. You should now be able to invoke cur.py from the commandline.  It does take the --help flag.

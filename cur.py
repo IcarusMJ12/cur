@@ -136,7 +136,6 @@ def main():
         index = iter(repeat.indices).next()
         for i in xrange(index[1] - repeat.length + 1, index[1] + 1):
             print '\t', a.canonized[a.lines[index[0]][i]]
-    print '*'*80
     print colored_red('%d/%d lines can be refactored' %\
             (total_severity, a.lines_count))
     try:
