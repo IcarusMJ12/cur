@@ -3,54 +3,9 @@
 A sample implementation of Ukkonen's suffix trie.
 """
 
+from sys import getsizeof
+
 __all__ = ['MaximalRepeat', 'Node', 'STrie']
-
-"""
-class SortedDictionary(object):
-    __slots__ = {'_items', '_keys'}
-
-    def __init__(self):
-        self._items, self._keys = None, None
-    
-    def keys(self):
-        if self._keys is not None:
-            if isinstance(self._keys, list):
-                for k in self._keys:
-                    yield k
-            else:
-                yield self._keys
-
-    def __len__(self):
-        if self._keys is None:
-            return 0
-        if isinstance(self._keys, list):
-            return len(self._keys)
-        return 1
-
-    def __getitem__(self, index):
-        if self._keys is not None:
-            if isinstance(self._keys, list):
-                return self._items[index]
-            if self._keys == index:
-                return self._items
-        raise KeyError(index)
-
-    def __setitem__(self, index, val):
-        if self._keys == None:
-            self._keys = index
-            self._items = val
-            return
-        if not isinstance(self._keys, list):
-            if index == self._keys:
-                self._items = val
-                return
-            self._keys = [self._keys, index]
-            self._items = {self._keys: self._items, index: val}
-            return
-        if index not in self._keys():
-            self._keys.append(index)
-        self._items[index] = val
-"""
 
 class MaximalRepeat(object):
     """
@@ -83,10 +38,14 @@ class Node(object):
         """
         `index` is the 2-tuple position of this node in the suffix trie.
         """
-        self.indices = set([index])
+        # not using set because set takes up entirely too much memory
+        self.indices = [index]
         self._children = {}
         self.suffix_link = suffix_link
     
+    def size(self):
+        return getsizeof(self.indices) + getsizeof(self._children) + getsizeof(self)
+
     def __getitem__(self, index):
         return self._children[index]
 
@@ -100,7 +59,8 @@ class STrie(object):
     """
     A suffix trie.
     """
-    __slots__ = ('root', 'strings', 'nodes_processed', 'current', '_root_keys')
+    __slots__ = ('root', 'strings', 'nodes_processed', 'current', '_root_keys',\
+            'size')
 
     def __init__(self):
         self.root = Node(None)
@@ -108,6 +68,7 @@ class STrie(object):
         self.nodes_processed = 0
         self.current = None
         self._root_keys = []
+        self.size = 0
 
     def add(self, string):
         """
@@ -137,13 +98,16 @@ class STrie(object):
             if key in current.keys():
                 n = current[key]
                 while n.suffix_link is not None:
-                    n.indices.add(index)
+                    if index not in n.indices:
+                        n.indices.append(index)
                     n = n.suffix_link
                 child = current[key]
             elif current.suffix_link is None:
                 child = Node(index, current)
+                self.size += child.size()
             else:
                 child = Node(index)
+                self.size += child.size()
             if last_inserted is not None:
                 last_inserted.suffix_link = child
             current[key] = child
@@ -196,7 +160,7 @@ if __name__ == '__main__':
     def render_node_r(node, strings, graph):
         try:
             index = node.indices.pop()
-            node.indices.add(index)
+            node.indices.append(index)
             label = strings[index[0]][index[1]]
         except IndexError:
             label = '<eof>'
@@ -213,7 +177,7 @@ if __name__ == '__main__':
         if suffix_link is not None:
             try:
                 index = suffix_link.indices.pop()
-                suffix_link.indices.add(index)
+                suffix_link.indices.append(index)
                 suffix_label = strings[index[0]][index[1]]
             except IndexError:
                 suffix_label = '<eof>'

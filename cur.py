@@ -112,6 +112,8 @@ def main():
                 stderr.flush()
         total += node_count
         stderr.write('\n')
+        stderr.write('\tsize of strie is now %d bytes\n' % a._trie.size)
+        stderr.flush()
     stderr.write("total nodes: %d\n" % total)
     stderr.write("finding maximal repeats (this may take a while)\n")
     repeats = a.get_sorted_repeats(metric)
