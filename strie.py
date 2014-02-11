@@ -3,11 +3,23 @@
 A sample implementation of Ukkonen's suffix trie.
 """
 
-class MaximalRepeat(object):
-    __slots__ = ('strings', 'length', 'indices')
+__all__ = ['MaximalRepeat', 'Node', 'STrie']
 
-    def __init__(self, strings, length, indices):
-        self.strings, self.length, self.indices = strings, length, sorted(indices)
+class MaximalRepeat(object):
+    """
+    A struct-like object for maximal repeat metadata.
+    """
+    __slots__ = ('strings', 'length', 'indices', 'contains')
+
+    def __init__(self, strings, length, indices, contains=None):
+        """
+        `strings` is an array of strings where the maximal repeat is found.
+        `length` is the length of this repeat.
+        `indices` are the offsets in `strings` to the *last* element of the repeat.
+        `contains` is a reference to a contained smaller but more frequent repeat.
+        """
+        self.strings, self.length, self.indices, self.contains =\
+                strings, length, sorted(indices), contains
     
     def __repr__(self):
         index = iter(self.indices).next()
@@ -15,9 +27,15 @@ class MaximalRepeat(object):
         return '<' + str(list(self.indices)) + ':' + string + '>'
 
 class Node(object):
+    """
+    A suffix trie node.
+    """
     __slots__ = ('indices', '_children', '_children_keys', 'suffix_link')
 
     def __init__(self, index, suffix_link=None):
+        """
+        `index` is the 2-tuple position of this node in the suffix trie.
+        """
         self.indices = set([index])
         self._children = {}
         # stores the keys longest edge first
@@ -33,9 +51,15 @@ class Node(object):
         self._children[index] = val
     
     def keys(self):
+        """
+        The keys are kept sorted in insertion order.
+        """
         return self._children_keys
 
 class STrie(object):
+    """
+    A suffix trie.
+    """
     __slots__ = ('root', 'strings', 'nodes_processed', 'current')
 
     def __init__(self):
@@ -45,6 +69,9 @@ class STrie(object):
         self.current = None
 
     def add(self, string):
+        """
+        Call this for each string you wish to add to the same trie.
+        """
         self.nodes_processed = 0
         self.strings.append(string)
         string_index = len(self.strings) - 1
@@ -83,30 +110,39 @@ class STrie(object):
                 yield self.nodes_processed
         self.current = self.current[key]
 
-    def maximal_repeats(self, cutoff_repeats=3, cutoff_length=3):
+    def maximal_repeats(self,\
+            cutoff_metric = lambda count, length: int(count >= 3 and length >= 3)):
+        """
+        Returns maximal repeats where the count and length of the repeat are
+        greater than the provided cutoff metric as determined by the provided
+        `cutoff_metric` function taking count and length as arguments, respectively.
+        """
         ret = []
         seen = {}
         for key in self.root.keys():
             result = []
-            stack = [(self.root[key], 1)]
+            stack = [(self.root[key], 1, None)]
             while len(stack) != 0:
-                node, length = stack.pop()
+                node, length, contains = stack.pop()
                 len_keys = len(node.keys())
-                if len_keys == 0 and (min(node.indices) not in seen.keys() or\
+                if len_keys == 0 and cutoff_metric(len(node.indices), length) > 0\
+                        and (min(node.indices) not in seen.keys() or\
                         len(node.indices) > seen[min(node.indices)]):
-                    result.append(MaximalRepeat(self.strings, length, node.indices))
+                    result.append(MaximalRepeat\
+                            (self.strings, length, node.indices, contains))
                 elif len_keys == 1:
-                    stack.append( (node[node.keys()[0]], length + 1) )
+                    stack.append( (node[node.keys()[0]], length + 1, contains) )
                 else:
+                    if (min(node.indices) not in seen.keys() or\
+                            len(node.indices) > seen[min(node.indices)]) and\
+                            cutoff_metric(len(node.indices), length) > 0:
+                        contains = MaximalRepeat(self.strings, length, node.indices, contains)
+                        result.append(contains)
                     for key in node.keys():
-                        stack.append( (node[key], length + 1) )
-                    if min(node.indices) not in seen.keys() or\
-                            len(node.indices) > seen[min(node.indices)]:
-                        result.append(MaximalRepeat(self.strings, length, node.indices))
+                        stack.append( (node[key], length + 1, contains) )
             seen.update([(min(r.indices), len(r.indices)) for r in result])
             ret += result
-        return [r for r in ret\
-                if len(r.indices) >= cutoff_repeats and r.length >= cutoff_length]
+        return ret
     
 if __name__ == '__main__':
     import argparse
@@ -166,7 +202,8 @@ if __name__ == '__main__':
         result = render_trie(trie)
         result.layout('dot')
         result.draw(''.join(args.string) + '-strie.png')
-        repeats = sorted(trie.maximal_repeats(3, 3),\
+        repeats = sorted(trie.maximal_repeats(\
+                lambda repeats, length: repeats >= 3 and length >= 3),\
                 lambda x, y: cmp(x.length, y.length), reverse=True)
         for r in repeats:
             print r
