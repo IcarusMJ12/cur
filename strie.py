@@ -40,20 +40,38 @@ class Node(object):
         """
         # not using set because set takes up entirely too much memory
         self.indices = [index]
-        self._children = {}
+        self._children = None
         self.suffix_link = suffix_link
     
     def size(self):
         return getsizeof(self.indices) + getsizeof(self._children) + getsizeof(self)
 
     def __getitem__(self, index):
-        return self._children[index]
+        if self._children is not None:
+            if isinstance(self._children, dict):
+                return self._children[index]
+            if self._children[0] == index:
+                return self._children[1]
+        raise KeyError(index)
 
     def __setitem__(self, index, val):
-        self._children[index] = val
+        if self._children is not None:
+            if isinstance(self._children, dict):
+                self._children[index] = val
+                return
+            if self._children[0] == index:
+                self._children = (index, val)
+                return
+            self._children = { self._children[0]: self._children[1], index: val }
+        else:
+            self._children = (index, val)
     
     def keys(self):
-        return self._children.keys()
+        if self._children is not None:
+            if isinstance(self._children, dict):
+                return self._children.keys()
+            return (self._children[0],)
+        return ()
 
 class STrie(object):
     """
