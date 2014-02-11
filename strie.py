@@ -21,7 +21,7 @@ class MaximalRepeat(object):
         `contains` is a reference to a contained smaller but more frequent repeat.
         """
         self.strings, self.length, self.indices, self.contains =\
-                strings, length, sorted(indices), contains
+                strings, length, indices, contains
     
     def __repr__(self):
         index = iter(self.indices).next()
@@ -32,19 +32,47 @@ class Node(object):
     """
     A suffix trie node.
     """
-    __slots__ = ('indices', '_children', 'suffix_link')
+    __slots__ = ('_indices', '_children', 'suffix_link')
 
     def __init__(self, index, suffix_link=None):
         """
         `index` is the 2-tuple position of this node in the suffix trie.
         """
         # not using set because set takes up entirely too much memory
-        self.indices = [index]
+        self._indices = index
         self._children = None
         self.suffix_link = suffix_link
     
     def size(self):
-        return getsizeof(self.indices) + getsizeof(self._children) + getsizeof(self)
+        return getsizeof(self._indices) + getsizeof(self._children) + getsizeof(self)
+
+    def update_index(self, index):
+        if not isinstance(self._indices, list) and self._indices != index:
+            self._indices = [self._indices, index]
+        elif index not in self._indices:
+            self._indices.append(index)
+    
+    @property
+    def index_len(self):
+        if isinstance(self._indices, list):
+            return len(self._indices)
+        if self._indices is not None:
+            return 1
+        return 0
+
+    @property
+    def first_index(self):
+        if isinstance(self._indices, list):
+            return self._indices[0]
+        if self._indices is not None:
+            return self._indices
+        raise TypeError()
+
+    @property
+    def indices(self):
+        if isinstance(self._indices, list):
+            return tuple(sorted(self._indices))
+        return tuple([self._indices])
 
     def __getitem__(self, index):
         if self._children is not None:
@@ -116,8 +144,7 @@ class STrie(object):
             if key in current.keys():
                 n = current[key]
                 while n.suffix_link is not None:
-                    if index not in n.indices:
-                        n.indices.append(index)
+                    n.update_index(index)
                     n = n.suffix_link
                 child = current[key]
             elif current.suffix_link is None:
@@ -150,17 +177,17 @@ class STrie(object):
             while len(stack) != 0:
                 node, length, contains = stack.pop()
                 len_keys = len(node.keys())
-                if len_keys == 0 and cutoff_metric(len(node.indices), length) > 0\
-                        and (min(node.indices) not in seen.keys() or\
-                        len(node.indices) > seen[min(node.indices)]):
+                if len_keys == 0 and cutoff_metric(node.index_len, length) > 0\
+                        and (node.first_index not in seen.keys() or\
+                        node.index_len > seen[node.first_index]):
                     result.append(MaximalRepeat\
                             (self.strings, length, node.indices, contains))
                 elif len_keys == 1:
                     stack.append( (node[node.keys()[0]], length + 1, contains) )
                 else:
-                    if (min(node.indices) not in seen.keys() or\
-                            len(node.indices) > seen[min(node.indices)]) and\
-                            cutoff_metric(len(node.indices), length) > 0:
+                    if (node.first_index not in seen.keys() or\
+                            node.index_len > seen[node.first_index]) and\
+                            cutoff_metric(node.index_len, length) > 0:
                         contains = MaximalRepeat(self.strings, length, node.indices, contains)
                         result.append(contains)
                     for key in node.keys():
@@ -177,8 +204,7 @@ if __name__ == '__main__':
 
     def render_node_r(node, strings, graph):
         try:
-            index = node.indices.pop()
-            node.indices.append(index)
+            index = node.first_index
             label = strings[index[0]][index[1]]
         except IndexError:
             label = '<eof>'
@@ -191,11 +217,9 @@ if __name__ == '__main__':
         for key in keys:
             render_node_r(node[key], strings, graph)
             graph.add_edge(node_id, id(node[key]))
-            #print node.indices, '->', node[key].indices
         if suffix_link is not None:
             try:
-                index = suffix_link.indices.pop()
-                suffix_link.indices.append(index)
+                index = suffix_link.first_index
                 suffix_label = strings[index[0]][index[1]]
             except IndexError:
                 suffix_label = '<eof>'
