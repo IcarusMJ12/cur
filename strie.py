@@ -3,7 +3,7 @@
 A sample implementation of Ukkonen's suffix trie.
 """
 
-from sys import getsizeof
+#from sys import getsizeof
 
 __all__ = ['MaximalRepeat', 'Node', 'STrie']
 
@@ -43,10 +43,15 @@ class Node(object):
         self._children = None
         self.suffix_link = suffix_link
     
+    """
     def size(self):
-        return getsizeof(self._indices) + getsizeof(self._children) + getsizeof(self)
+        return getsizeof(self._indices) + getsizeof(self._children) +\
+                getsizeof(self)
+    """
 
-    def update_index(self, index):
+    """
+    """
+    def _update_index(self, index):
         if not isinstance(self._indices, list) and self._indices != index:
             self._indices = [self._indices, index]
         elif index not in self._indices:
@@ -105,8 +110,8 @@ class STrie(object):
     """
     A suffix trie.
     """
-    __slots__ = ('root', 'strings', 'nodes_processed', 'current', '_root_keys',\
-            'size')
+    __slots__ = ('root', 'strings', 'nodes_processed', 'current', '_root_keys')
+#           'size')
 
     def __init__(self):
         self.root = Node(None)
@@ -114,7 +119,7 @@ class STrie(object):
         self.nodes_processed = 0
         self.current = None
         self._root_keys = []
-        self.size = 0
+        #self.size = 0
 
     def add(self, string):
         """
@@ -144,15 +149,15 @@ class STrie(object):
             if key in current.keys():
                 n = current[key]
                 while n.suffix_link is not None:
-                    n.update_index(index)
+                    n._update_index(index)
                     n = n.suffix_link
                 child = current[key]
             elif current.suffix_link is None:
                 child = Node(index, current)
-                self.size += child.size()
+                #self.size += child.size()
             else:
                 child = Node(index)
-                self.size += child.size()
+                #self.size += child.size()
             if last_inserted is not None:
                 last_inserted.suffix_link = child
             current[key] = child
