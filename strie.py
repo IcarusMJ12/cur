@@ -3,9 +3,8 @@
 A sample implementation of Ukkonen's suffix trie.
 """
 
-#from sys import getsizeof
-
 __all__ = ['MaximalRepeat', 'Node', 'STrie']
+
 
 class MaximalRepeat(object):
     """
@@ -43,14 +42,7 @@ class Node(object):
         self._children = None
         self.suffix_link = suffix_link
     
-    """
-    def size(self):
-        return getsizeof(self._indices) + getsizeof(self._children) +\
-                getsizeof(self)
-    """
 
-    """
-    """
     def _update_index(self, index):
         if not isinstance(self._indices, list) and self._indices != index:
             self._indices = [self._indices, index]
@@ -106,12 +98,12 @@ class Node(object):
             return (self._children[0],)
         return ()
 
+
 class STrie(object):
     """
     A suffix trie.
     """
     __slots__ = ('root', 'strings', 'nodes_processed', 'current', '_root_keys')
-#           'size')
 
     def __init__(self):
         self.root = Node(None)
@@ -119,17 +111,13 @@ class STrie(object):
         self.nodes_processed = 0
         self.current = None
         self._root_keys = []
-        #self.size = 0
 
     def add(self, string):
-        """
-        Call this for each string you wish to add to the same trie.
-        """
         self.nodes_processed = 0
         self.strings.append(string)
         string_index = len(self.strings) - 1
         self.current = self.root
-        for i in xrange(len(string)):
+        for i in range(len(string)):
             if string[i] not in self.root.keys():
                 self._root_keys.append(string[i])
             for count in self._insert((string_index, i)):
@@ -154,10 +142,8 @@ class STrie(object):
                 child = current[key]
             elif current.suffix_link is None:
                 child = Node(index, current)
-                #self.size += child.size()
             else:
                 child = Node(index)
-                #self.size += child.size()
             if last_inserted is not None:
                 last_inserted.suffix_link = child
             current[key] = child
@@ -167,7 +153,7 @@ class STrie(object):
                 yield self.nodes_processed
         self.current = self.current[key]
 
-    def maximal_repeats(self,\
+    def maximal_repeats(self,
             cutoff_metric = lambda count, length: int(count >= 3 and length >= 3)):
         """
         Returns maximal repeats where the count and length of the repeat are
@@ -248,7 +234,7 @@ if __name__ == '__main__':
         args = parser.parse_args()
         trie = STrie()
         for string in args.string:
-            print string
+            print(string)
             for count in trie.add(string):
                 stdout.write('\r\t%d nodes processed' % count)
                 stdout.flush()
@@ -260,6 +246,6 @@ if __name__ == '__main__':
                 lambda repeats, length: repeats >= 3 and length >= 3),\
                 lambda x, y: cmp(x.length, y.length), reverse=True)
         for r in repeats:
-            print r
+            print(r)
 
     main()

@@ -84,9 +84,9 @@ class Analyzer(object):
         function.  The metric function takes repeat count and repeat length as its
         two inputs, respectively.
         """
-        return sorted(self._trie.maximal_repeats(metric), lambda x,y:\
-                cmp(metric(len(x.indices), x.length), metric(len(y.indices),\
-                y.length)), reverse=True)
+        return sorted(self._trie.maximal_repeats(metric),
+                      key=lambda x: metric(len(x.indices), x.length),
+                      reverse=True)
     
 def main():
     parser = argparse.ArgumentParser(description = __doc__)
@@ -126,28 +126,28 @@ def main():
         else:
             total_severity += max(0,\
                     metric(len(repeat.indices), repeat.length - contains.length + 1))
-        print colored_red(\
+        print(colored_red(\
                 'severity %d: %d repeats of length %d; id %d, contains %d' %\
                 (severity, len(repeat.indices), repeat.length, id(repeat),\
-                id(contains) if contains is not None else 0))
+                id(contains) if contains is not None else 0)))
         indices = '@ '
         for index in repeat.indices:
             indices += '(%s,%d) ' % (basename(filenames[index[0]]),\
                     a.lineno_map[index[0]][index[1] - repeat.length + 1] + 1)
-        print colored_red(indices)
-        index = iter(repeat.indices).next()
-        for i in xrange(index[1] - repeat.length + 1, index[1] + 1):
-            print '\t', a.canonized[a.lines[index[0]][i]]
-    print colored_red('%d/%d lines can be refactored' %\
-            (total_severity, a.lines_count))
+        print(colored_red(indices))
+        index = iter(repeat.indices).__next__()
+        for i in range(index[1] - repeat.length + 1, index[1] + 1):
+            print('\t', a.canonized[a.lines[index[0]][i]])
+    print(colored_red('%d/%d lines can be refactored' %\
+            (total_severity, a.lines_count)))
     try:
-        with open(CUR_FILENAME, 'rb') as f:
-            print colored_red('last run it was %s/%s lines' %\
-                    tuple(f.read().strip().split('/')))
+        with open(CUR_FILENAME, 'r') as f:
+            print(colored_red('last run it was %s/%s lines' %\
+                    tuple(f.read().strip().split('/'))))
     except IOError as e:
         if e.errno != 2: # 2 is file does not exist
             raise
-    with open(CUR_FILENAME, 'wb') as f:
+    with open(CUR_FILENAME, 'w') as f:
         f.write('%d/%d' % (total_severity, a.lines_count))
 
 if __name__ == '__main__':
